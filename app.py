@@ -8,9 +8,9 @@ st.set_page_config(page_title="Revenue vs wRVU Agent", layout="wide")
 st.title("Revenue vs wRVU Agent (Clinic Benchmarking)")
 st.caption("Upload clinic_code, revenue, wRVU (month ignored). Computes Rev/wRVU, ranks clinics, flags outliers, and answers simple prompts.")
 
-def load_csv_flexible(uploaded_file) -> pd.DataFrame:
-    raw = uploaded_file.read()
-    text = raw.decode("utf-8", errors="replace").strip()
+@st.cache_data
+def load_csv_flexible(file_bytes: bytes, file_name: str) -> pd.DataFrame:
+    text = file_bytes.decode("utf-8", errors="replace").strip()
     if not text:
         raise ValueError("File is empty.")
 
@@ -59,6 +59,7 @@ def load_csv_flexible(uploaded_file) -> pd.DataFrame:
 
     return df.groupby("clinic_code", as_index=False)[["revenue", "wRVU"]].sum()
 
+@st.cache_data
 def compute_metrics(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d["rev_per_wrvu"] = d["revenue"] / d["wRVU"]
@@ -124,7 +125,7 @@ if not file:
     st.info("Upload a file with columns: clinic_code, revenue, wRVU.")
     st.stop()
 
-df = load_csv_flexible(file)
+df = load_csv_flexible(file.read(), file.name)
 metrics = compute_metrics(df)
 stats = dispersion_stats(metrics)
 
@@ -143,12 +144,13 @@ st.dataframe(out, use_container_width=True)
 
 st.subheader("Rev/wRVU Chart")
 m_sorted = metrics.sort_values("rev_per_wrvu", ascending=False)
-fig = plt.figure()
-plt.bar(m_sorted["clinic_code"], m_sorted["rev_per_wrvu"])
-plt.xticks(rotation=45, ha="right")
-plt.ylabel("Revenue per wRVU")
-plt.xlabel("Clinic")
-st.pyplot(fig, clear_figure=True)
+fig, ax = plt.subplots()
+ax.bar(m_sorted["clinic_code"], m_sorted["rev_per_wrvu"])
+ax.tick_params(axis="x", labelrotation=45)
+ax.set_ylabel("Revenue per wRVU")
+ax.set_xlabel("Clinic")
+st.pyplot(fig)
+plt.close(fig)
 
 st.divider()
 st.subheader("Ask the agent")
