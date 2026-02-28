@@ -1,33 +1,26 @@
-import pandas as pd
 import random
+import pandas as pd
 
-# Parameters for sample data
-num_providers = 10
-num_departments = 5
-num_records = 100
-
-# Sample providers and departments
-providers = [f'Provider_{i+1}' for i in range(num_providers)]
-departments = [f'Department_{i+1}' for i in range(num_departments)]
+# Configuration
+CLINICS = [f"CLINIC_{i + 1:02d}" for i in range(8)]
+ROWS_PER_CLINIC = 5  # multiple rows per clinic to exercise groupby summing
 
 # Generate sample data
 sample_data = []
-for _ in range(num_records):
-    provider = random.choice(providers)
-    department = random.choice(departments)
-    date = pd.Timestamp('2026-02-01') + pd.to_timedelta(random.randint(0, 29), unit='D')
-    wrvu = random.uniform(0, 100)
-    revenue = wrvu * random.uniform(100, 500)  # Random revenue based on wRVU
-    additional_metric = random.uniform(0, 1)  # Just an example of an additional metric
-    sample_data.append([provider, department, date, wrvu, revenue, additional_metric])
+for clinic in CLINICS:
+    for _ in range(ROWS_PER_CLINIC):
+        wrvu = round(random.uniform(50, 300), 2)
+        revenue = round(wrvu * random.uniform(80, 200), 2)
+        sample_data.append({"clinic_code": clinic, "revenue": revenue, "wRVU": wrvu})
 
-# Create DataFrame
-columns = ['Provider', 'Department', 'Date', 'wRVU', 'Revenue', 'Additional Metric']
-df = pd.DataFrame(sample_data, columns=columns)
+df = pd.DataFrame(sample_data)
 
-# Write to Excel file
-output_file = 'sample_data.xlsx'
-with pd.ExcelWriter(output_file) as writer:
-    df.to_excel(writer, sheet_name='wRVU_data', index=False)
+# Primary output: CSV compatible with app.py
+csv_file = "sample_clinic_data.csv"
+df.to_csv(csv_file, index=False)
+print(f"Sample data generated and saved to {csv_file}")
 
-print(f'Sample data generated and saved to {output_file}')
+# Optional: Excel output
+# xlsx_file = "sample_clinic_data.xlsx"
+# df.to_excel(xlsx_file, index=False)
+# print(f"Also saved to {xlsx_file}")
